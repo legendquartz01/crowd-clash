@@ -1,10 +1,11 @@
-import { CheckCircle2, LogOut, Users } from 'lucide-react';
-import type { ConnectionStatus, TransportMode } from '../../types/game';
+import { CheckCircle2, Gamepad2, LogOut, UserX, Users } from 'lucide-react';
+import type { ConnectionStatus, GameMode, TransportMode } from '../../types/game';
 import { ConnectionBadge } from '../ConnectionBadge';
 
 interface PlayerLobbyViewProps {
   roomCode: string;
   playerName: string;
+  gameMode: GameMode;
   connectedPlayersCount: number;
   hasHostSynced: boolean;
   connectionStatus: ConnectionStatus;
@@ -15,6 +16,7 @@ interface PlayerLobbyViewProps {
 export function PlayerLobbyView({
   roomCode,
   playerName,
+  gameMode,
   connectedPlayersCount,
   hasHostSynced,
   connectionStatus,
@@ -43,7 +45,9 @@ export function PlayerLobbyView({
           </h1>
           <p className="mt-2 text-base font-medium text-slate-600">
             {hasHostSynced
-              ? 'Waiting for host to start team selection…'
+              ? gameMode === 'imposter'
+                ? 'Host selected Imposter Mode — waiting for roles…'
+                : 'Waiting for host to start team selection…'
               : `Connecting to Host in room ${roomCode}…`}
           </p>
 
@@ -57,10 +61,31 @@ export function PlayerLobbyView({
           </div>
 
           {hasHostSynced && (
-            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-1.5 text-xs font-bold text-slate-600">
-              <Users className="h-3.5 w-3.5 text-slate-500" />
-              <span className="font-mono-num">{connectedPlayersCount}</span>
-              <span>in the room</span>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1.5 text-xs font-bold text-slate-600">
+                <Users className="h-3.5 w-3.5 text-slate-500" />
+                <span className="font-mono-num">{connectedPlayersCount}</span>
+                <span>in room</span>
+              </div>
+              <div
+                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-extrabold ${
+                  gameMode === 'imposter'
+                    ? 'bg-rose-100 text-rose-700'
+                    : 'bg-slate-900 text-white'
+                }`}
+              >
+                {gameMode === 'imposter' ? (
+                  <>
+                    <UserX className="h-3.5 w-3.5" />
+                    <span>Imposter Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <Gamepad2 className="h-3.5 w-3.5" />
+                    <span>Arcade Mode</span>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>

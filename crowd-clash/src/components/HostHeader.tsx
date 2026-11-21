@@ -18,9 +18,11 @@ const STATE_LABELS: Record<GameState, string> = {
   LOBBY: 'Lobby',
   TEAM_SELECT: 'Team Selection',
   GAME_INTRO: 'Up Next',
+  COUNTDOWN: '3 · 2 · 1 · GO!',
   GAME_ACTIVE: 'Live Round',
   ROUND_END: 'Round Results',
   FINAL_WINNER: 'Championship',
+  IMPOSTER_ACTIVE: 'Imposter Mode',
 };
 
 export function HostHeader({
@@ -93,18 +95,16 @@ export function HostHeader({
             {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
 
-          {gameState !== 'LOBBY' && (
-            <button
-              id="host-reset-room-btn"
-              type="button"
-              onClick={onNewRoom}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-rose-500/40 hover:bg-rose-500/15 hover:text-rose-200"
-              title="Start a brand new room"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">New Room</span>
-            </button>
-          )}
+          <button
+            id="host-reset-room-btn"
+            type="button"
+            onClick={onNewRoom}
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-rose-500/40 hover:bg-rose-500/15 hover:text-rose-200"
+            title="Generate a fresh 4-letter room code"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>New Room</span>
+          </button>
         </div>
       </div>
     </header>

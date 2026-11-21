@@ -66,6 +66,9 @@ class SupabaseRoomAdapter implements RoomChannelAdapter {
       'TEAM_PICK',
       'SCORE_DELTA',
       'SCORE_UPDATE',
+      'IMPOSTER_CLUE',
+      'IMPOSTER_REACT',
+      'IMPOSTER_VOTE',
     ];
 
     for (const evt of events) {

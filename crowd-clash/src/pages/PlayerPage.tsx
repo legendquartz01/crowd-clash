@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { CountdownOverlay } from '../components/CountdownOverlay';
 import { PlayerFinalWinnerView } from '../components/player/PlayerFinalWinnerView';
 import { PlayerGameActiveView } from '../components/player/PlayerGameActiveView';
 import { PlayerGameIntroView } from '../components/player/PlayerGameIntroView';
+import { PlayerImposterView } from '../components/player/PlayerImposterView';
 import { PlayerJoinView } from '../components/player/PlayerJoinView';
 import { PlayerLobbyView } from '../components/player/PlayerLobbyView';
 import { PlayerRoundEndView } from '../components/player/PlayerRoundEndView';
@@ -17,17 +19,21 @@ export function PlayerPage() {
 
   const {
     session,
-    savedNameHint,
+    lastProfile,
     roomState,
     me,
     effectiveTeam,
     displayRoundScore,
     timeLeft,
+    imposterTimeLeft,
     connectionStatus,
     transportMode,
     joinRoom,
     pickTeam,
     recordScore,
+    submitImposterClue,
+    reactToImposterClue,
+    submitImposterVote,
     leaveRoom,
   } = usePlayerRoom(urlRoom);
 
@@ -37,18 +43,16 @@ export function PlayerPage() {
       : 'Join Game — CROWD CLASH';
   }, [session]);
 
-  // Not yet joined -> Join form with ?room= prefill
   if (!session) {
     return (
       <PlayerJoinView
         initialRoomCode={urlRoom ?? ''}
-        initialName={savedNameHint}
+        lastProfile={lastProfile}
         onJoin={joinRoom}
       />
     );
   }
 
-  // Joined but waiting for initial STATE_SYNC or Host is in LOBBY
   if (!roomState || roomState.meta.state === 'LOBBY') {
     const connectedCount = roomState
       ? Object.values(roomState.players).filter((p) => p.online).length
@@ -57,6 +61,7 @@ export function PlayerPage() {
       <PlayerLobbyView
         roomCode={session.roomCode}
         playerName={session.name}
+        gameMode={roomState?.meta.gameMode ?? 'arcade'}
         connectedPlayersCount={Math.max(1, connectedCount)}
         hasHostSynced={Boolean(roomState)}
         connectionStatus={connectionStatus}
@@ -66,8 +71,26 @@ export function PlayerPage() {
     );
   }
 
-  const { meta, teams, players } = roomState;
+  const { meta, teams, players, imposter } = roomState;
   const allPlayers = Object.values(players);
+
+  if (meta.state === 'IMPOSTER_ACTIVE' && imposter?.round) {
+    return (
+      <PlayerImposterView
+        key={imposter.round.roundNumber}
+        meId={session.playerId}
+        meName={session.name}
+        roomCode={session.roomCode}
+        round={imposter.round}
+        settings={imposter.settings}
+        allPlayers={allPlayers}
+        timeLeft={imposterTimeLeft}
+        onSubmitClue={submitImposterClue}
+        onReactToClue={reactToImposterClue}
+        onSubmitVote={submitImposterVote}
+      />
+    );
+  }
 
   if (meta.state === 'TEAM_SELECT') {
     const redCount = allPlayers.filter((p) => p.team === 'red').length;
@@ -101,6 +124,19 @@ export function PlayerPage() {
         team={resolvedTeam}
         roundNumber={meta.currentRoundIndex + 1}
         totalRounds={meta.gamePlaylist.length}
+      />
+    );
+  }
+
+  if (meta.state === 'COUNTDOWN' && currentGame) {
+    return (
+      <CountdownOverlay
+        countdownEndsAt={meta.countdownEndsAt}
+        game={currentGame}
+        roundNumber={meta.currentRoundIndex + 1}
+        totalRounds={meta.gamePlaylist.length}
+        variant="player"
+        team={resolvedTeam}
       />
     );
   }

@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getGameById } from '../games/registry';
 import { createRoomChannel, type RoomChannelAdapter } from '../lib/realtime';
-import { isSupabaseConfigured } from '../lib/supabase';
 import {
   clearPlayerSession,
   generatePlayerId,
+  loadPlayerLastProfile,
   loadPlayerSession,
   normalizeRoomCode,
   savePlayerSession,
+  type PlayerLastProfile,
   type PlayerPersistedSession,
 } from '../lib/storage';
+import { isSupabaseConfigured } from '../lib/supabase';
 import type {
+  ClueReactionType,
   ConnectionStatus,
   RoomState,
   TeamId,
@@ -26,14 +29,15 @@ export function usePlayerRoom(urlRoomCode: string | null) {
   const [session, setSession] = useState<PlayerPersistedSession | null>(() => {
     const saved = loadPlayerSession();
     if (!saved) return null;
-    // If URL explicitly specifies a DIFFERENT room code, don't auto-connect to stale room
     if (normalizedUrlRoom && normalizedUrlRoom !== saved.roomCode) {
       return null;
     }
     return saved;
   });
 
-  const [savedNameHint] = useState<string>(() => loadPlayerSession()?.name ?? '');
+  const [lastProfile, setLastProfile] = useState<PlayerLastProfile | null>(() =>
+    loadPlayerLastProfile()
+  );
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [optimisticDelta, setOptimisticDelta] = useState<number>(0);
@@ -82,7 +86,6 @@ export function usePlayerRoom(urlRoomCode: string | null) {
   const activeRoomCode = session?.roomCode ?? null;
   const activePlayerId = session?.playerId ?? null;
 
-  // Subscribe to `room:{roomCode}` whenever roomCode & playerId are active
   useEffect(() => {
     if (!activeRoomCode || !activePlayerId) {
       syncedRef.current = false;
@@ -123,10 +126,10 @@ export function usePlayerRoom(urlRoomCode: string | null) {
         meta: payload.meta,
         teams: payload.teams,
         players: payload.players,
+        imposter: payload.imposter,
       });
       setOptimisticDelta(0);
 
-      // Persist authoritative team assigned/restored by Host
       const current = sessionRef.current;
       if (current) {
         const hostPlayer = payload.players[current.playerId];
@@ -156,13 +159,11 @@ export function usePlayerRoom(urlRoomCode: string | null) {
           players: payload.players,
         };
       });
-      // Reset optimistic offset once authoritative snapshot arrives (keep only un-flushed pending taps)
       setOptimisticDelta(pendingDeltaRef.current);
     });
 
     channel.subscribe();
 
-    // Retry PLAYER_JOIN until first STATE_SYNC arrives (resilient to Host refresh / slow start)
     const joinRetryInterval = window.setInterval(() => {
       if (syncedRef.current) return;
       const s = sessionRef.current;
@@ -191,7 +192,19 @@ export function usePlayerRoom(urlRoomCode: string | null) {
     flushPendingScore
   );
 
-  // Flush remaining score buffer whenever round ends
+  const imposterRound = activeRoomState?.imposter?.round ?? null;
+  const isImposterTimedPhase =
+    activeRoomState?.meta.state === 'IMPOSTER_ACTIVE' &&
+    Boolean(imposterRound?.phaseEndsAt) &&
+    (imposterRound?.phase === 'WRITING' ||
+      imposterRound?.phase === 'DISCUSSION' ||
+      imposterRound?.phase === 'VOTING');
+
+  const imposterTimeLeft = useCountdown(
+    imposterRound?.phaseEndsAt ?? null,
+    Boolean(isImposterTimedPhase)
+  );
+
   useEffect(() => {
     if (!isGameActive) {
       flushPendingScore();
@@ -204,17 +217,28 @@ export function usePlayerRoom(urlRoomCode: string | null) {
     if (cleanCode.length !== 4 || !cleanName) return;
 
     const existing = loadPlayerSession();
-    const reuseIdentity = existing && existing.roomCode === cleanCode;
+    const prevProfile = loadPlayerLastProfile();
+    const reuseFromActive = existing && existing.roomCode === cleanCode;
+    const reuseFromProfile = prevProfile && prevProfile.roomCode === cleanCode;
 
     const nextSession: PlayerPersistedSession = {
       roomCode: cleanCode,
-      playerId: reuseIdentity ? existing.playerId : generatePlayerId(),
+      playerId: reuseFromActive
+        ? existing.playerId
+        : reuseFromProfile
+          ? prevProfile.playerId
+          : generatePlayerId(),
       name: cleanName,
-      team: reuseIdentity ? existing.team : null,
+      team: reuseFromActive ? existing.team : null,
     };
 
     savePlayerSession(nextSession);
     sessionRef.current = nextSession;
+    setLastProfile({
+      roomCode: nextSession.roomCode,
+      playerId: nextSession.playerId,
+      name: nextSession.name,
+    });
     setRoomState(null);
     setOptimisticDelta(0);
     setSession(nextSession);
@@ -256,9 +280,43 @@ export function usePlayerRoom(urlRoomCode: string | null) {
     [flushPendingScore, throttleMs]
   );
 
+  // ---------------- Imposter Mode Player Actions ----------------
+  const submitImposterClue = useCallback((rawClue: string) => {
+    const current = sessionRef.current;
+    const cleanClue = rawClue.trim().replace(/\s+/g, ' ').slice(0, 36);
+    if (!current || !cleanClue) return;
+    void channelRef.current?.broadcast('IMPOSTER_CLUE', {
+      playerId: current.playerId,
+      clue: cleanClue,
+    });
+  }, []);
+
+  const reactToImposterClue = useCallback(
+    (targetPlayerId: string, reaction: ClueReactionType) => {
+      const current = sessionRef.current;
+      if (!current || !targetPlayerId) return;
+      void channelRef.current?.broadcast('IMPOSTER_REACT', {
+        reactorId: current.playerId,
+        targetPlayerId,
+        reaction,
+      });
+    },
+    []
+  );
+
+  const submitImposterVote = useCallback((targetPlayerId: string) => {
+    const current = sessionRef.current;
+    if (!current || !targetPlayerId || targetPlayerId === current.playerId) return;
+    void channelRef.current?.broadcast('IMPOSTER_VOTE', {
+      voterId: current.playerId,
+      targetPlayerId,
+    });
+  }, []);
+
   const leaveRoom = useCallback(() => {
     flushPendingScore();
     clearPlayerSession();
+    setLastProfile(loadPlayerLastProfile());
     sessionRef.current = null;
     setSession(null);
     setRoomState(null);
@@ -274,17 +332,21 @@ export function usePlayerRoom(urlRoomCode: string | null) {
 
   return {
     session,
-    savedNameHint,
+    lastProfile,
     roomState: activeRoomState,
     me,
     effectiveTeam,
     displayRoundScore,
     timeLeft,
+    imposterTimeLeft,
     connectionStatus,
     transportMode: TRANSPORT_MODE,
     joinRoom,
     pickTeam,
     recordScore,
+    submitImposterClue,
+    reactToImposterClue,
+    submitImposterVote,
     leaveRoom,
   };
 }

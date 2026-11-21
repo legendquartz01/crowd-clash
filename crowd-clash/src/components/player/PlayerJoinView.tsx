@@ -1,23 +1,29 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { ArrowRight, MonitorPlay } from 'lucide-react';
+import { ArrowRight, MonitorPlay, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { normalizeRoomCode } from '../../lib/storage';
+import { normalizeRoomCode, type PlayerLastProfile } from '../../lib/storage';
 
 interface PlayerJoinViewProps {
   initialRoomCode: string;
-  initialName: string;
+  lastProfile: PlayerLastProfile | null;
   onJoin: (roomCode: string, name: string) => void;
 }
 
 export function PlayerJoinView({
   initialRoomCode,
-  initialName,
+  lastProfile,
   onJoin,
 }: PlayerJoinViewProps) {
-  const [roomCode, setRoomCode] = useState(() => normalizeRoomCode(initialRoomCode));
-  const [name, setName] = useState(initialName);
+  const urlCode = normalizeRoomCode(initialRoomCode);
+  const [roomCode, setRoomCode] = useState(() => urlCode || lastProfile?.roomCode || '');
+  const [name, setName] = useState(() => lastProfile?.name ?? '');
   const [error, setError] = useState('');
+
+  // Show 1-tap Rejoin card whenever the player has a saved room + nickname
+  const rejoinCode = urlCode || lastProfile?.roomCode || '';
+  const rejoinName = lastProfile?.name?.trim() || '';
+  const canOneTapRejoin = rejoinCode.length === 4 && rejoinName.length > 0;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -49,7 +55,29 @@ export function PlayerJoinView({
       </div>
 
       {/* Main Join Card */}
-      <main className="my-6 w-full max-w-sm">
+      <main className="my-6 w-full max-w-sm space-y-3.5">
+        {/* 1-Tap Rejoin Banner */}
+        {canOneTapRejoin && (
+          <button
+            id="player-one-tap-rejoin-btn"
+            type="button"
+            onClick={() => onJoin(rejoinCode, rejoinName)}
+            className="flex w-full items-center justify-between gap-3 rounded-3xl border-2 border-emerald-500/40 bg-[#11151E] px-5 py-4 text-left text-white shadow-xl transition hover:border-emerald-400 hover:bg-[#171D29] active:scale-[0.98]"
+          >
+            <div className="min-w-0">
+              <div className="text-[11px] font-extrabold tracking-[0.18em] text-emerald-400 uppercase">
+                1-Tap Quick Rejoin
+              </div>
+              <div className="font-display mt-0.5 truncate text-lg font-bold text-white">
+                Rejoin <span className="font-mono-num tracking-wider text-emerald-300">{rejoinCode}</span> as {rejoinName}
+              </div>
+            </div>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-400 text-slate-950">
+              <RefreshCw className="h-5 w-5" />
+            </div>
+          </button>
+        )}
+
         <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-7">
           <h1 className="font-display text-3xl font-bold tracking-tight text-slate-950">
             Jump In

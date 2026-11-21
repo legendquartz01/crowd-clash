@@ -1,18 +1,22 @@
 import { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Crown, RotateCcw, Trophy } from 'lucide-react';
+import { Crown, RefreshCw, RotateCcw, Trophy } from 'lucide-react';
 import type { PlayerRecord, TeamsState } from '../../types/game';
 
 interface HostFinalWinnerViewProps {
+  roomCode: string;
   teams: TeamsState;
   players: PlayerRecord[];
-  onPlayAgain: () => void;
+  onPlayAgainSameRoom: () => void;
+  onNewRoom: () => void;
 }
 
 export function HostFinalWinnerView({
+  roomCode,
   teams,
   players,
-  onPlayAgain,
+  onPlayAgainSameRoom,
+  onNewRoom,
 }: HostFinalWinnerViewProps) {
   const redTotal = teams.red.totalScore;
   const whiteTotal = teams.white.totalScore;
@@ -187,16 +191,28 @@ export function HostFinalWinnerView({
         )}
       </section>
 
-      {/* Play Again Button */}
-      <button
-        id="host-play-again-btn"
-        type="button"
-        onClick={onPlayAgain}
-        className="font-display inline-flex items-center gap-2.5 rounded-2xl bg-white px-9 py-4 text-lg font-bold text-slate-950 shadow-xl transition hover:bg-slate-100 active:scale-[0.98]"
-      >
-        <RotateCcw className="h-5 w-5" />
-        <span>Play Again (New Room)</span>
-      </button>
+      {/* Rematch Action Buttons */}
+      <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <button
+          id="host-play-again-same-room-btn"
+          type="button"
+          onClick={onPlayAgainSameRoom}
+          className="font-display inline-flex items-center gap-2.5 rounded-2xl bg-emerald-400 px-9 py-4 text-lg font-bold text-slate-950 shadow-2xl shadow-emerald-950/50 transition hover:bg-emerald-300 active:scale-[0.98]"
+        >
+          <RefreshCw className="h-5 w-5" />
+          <span>Play Again (Same Room · {roomCode})</span>
+        </button>
+
+        <button
+          id="host-play-again-new-room-btn"
+          type="button"
+          onClick={onNewRoom}
+          className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/8 px-6 py-4 text-sm font-bold text-slate-200 transition hover:bg-white/15 hover:text-white active:scale-[0.98]"
+        >
+          <RotateCcw className="h-4 w-4" />
+          <span>New Room</span>
+        </button>
+      </div>
     </div>
   );
 }

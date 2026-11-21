@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
+import { CountdownOverlay } from '../components/CountdownOverlay';
 import { HostHeader } from '../components/HostHeader';
 import { HostFinalWinnerView } from '../components/host/HostFinalWinnerView';
 import { HostGameActiveView } from '../components/host/HostGameActiveView';
 import { HostGameIntroView } from '../components/host/HostGameIntroView';
+import { HostImposterView } from '../components/host/HostImposterView';
 import { HostLobbyView } from '../components/host/HostLobbyView';
 import { HostRoundEndView } from '../components/host/HostRoundEndView';
 import { HostTeamSelectView } from '../components/host/HostTeamSelectView';
@@ -14,9 +16,11 @@ export function HostPage() {
     roomCode,
     roomState,
     timeLeft,
+    imposterTimeLeft,
     onlineCount,
     connectionStatus,
     transportMode,
+    setGameMode,
     togglePlaylistGame,
     goToTeamSelect,
     startGames,
@@ -24,14 +28,22 @@ export function HostPage() {
     startRound,
     endRoundEarly,
     advanceAfterRound,
+    playAgainSameRoom,
     playAgainNewRoom,
+    updateImposterSettings,
+    startImposterRound,
+    beginImposterClues,
+    revealImposterCluesNow,
+    startImposterVoting,
+    endImposterVotingNow,
+    backToLobbyFromImposter,
   } = useHostRoom();
 
   useEffect(() => {
     document.title = `Host Stage (${roomCode}) — CROWD CLASH`;
   }, [roomCode]);
 
-  const { meta, teams, players } = roomState;
+  const { meta, teams, players, imposter } = roomState;
   const playerList = Object.values(players);
   const currentGame = getGameById(meta.currentGameId);
   const nextGameId = meta.gamePlaylist[meta.currentRoundIndex + 1] ?? null;
@@ -55,9 +67,30 @@ export function HostPage() {
             roomCode={roomCode}
             onlineCount={onlineCount}
             players={playerList}
+            gameMode={meta.gameMode}
             playlist={meta.gamePlaylist}
+            imposterSettings={imposter.settings}
+            usedImposterWordsCount={imposter.usedWords.length}
+            onSelectMode={setGameMode}
             onToggleGame={togglePlaylistGame}
             onNextTeamSelect={goToTeamSelect}
+            onUpdateImposterSettings={updateImposterSettings}
+            onStartImposterRound={startImposterRound}
+          />
+        )}
+
+        {meta.state === 'IMPOSTER_ACTIVE' && imposter.round && (
+          <HostImposterView
+            round={imposter.round}
+            settings={imposter.settings}
+            players={playerList}
+            timeLeft={imposterTimeLeft}
+            onStartClues={beginImposterClues}
+            onRevealCluesNow={revealImposterCluesNow}
+            onStartVote={startImposterVoting}
+            onEndVoteNow={endImposterVotingNow}
+            onPlayAnotherRound={startImposterRound}
+            onBackToLobby={backToLobbyFromImposter}
           />
         )}
 
@@ -77,6 +110,16 @@ export function HostPage() {
             durationSec={meta.roundDurationSec}
             onChangeDuration={setRoundDuration}
             onStartRound={startRound}
+          />
+        )}
+
+        {meta.state === 'COUNTDOWN' && currentGame && (
+          <CountdownOverlay
+            countdownEndsAt={meta.countdownEndsAt}
+            game={currentGame}
+            roundNumber={meta.currentRoundIndex + 1}
+            totalRounds={meta.gamePlaylist.length}
+            variant="host"
           />
         )}
 
@@ -106,9 +149,11 @@ export function HostPage() {
 
         {meta.state === 'FINAL_WINNER' && (
           <HostFinalWinnerView
+            roomCode={roomCode}
             teams={teams}
             players={playerList}
-            onPlayAgain={playAgainNewRoom}
+            onPlayAgainSameRoom={playAgainSameRoom}
+            onNewRoom={playAgainNewRoom}
           />
         )}
       </main>

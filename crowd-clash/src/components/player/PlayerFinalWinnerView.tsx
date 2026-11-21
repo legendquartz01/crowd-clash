@@ -107,19 +107,24 @@ export function PlayerFinalWinnerView({
         </div>
       </main>
 
-      <button
-        id="player-join-new-room-btn"
-        type="button"
-        onClick={onLeave}
-        className={`inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold shadow-md transition active:scale-[0.98] ${
-          isRed
-            ? 'bg-white text-rose-700 hover:bg-rose-50'
-            : 'bg-slate-950 text-white hover:bg-slate-800'
-        }`}
-      >
-        <LogOut className="h-4 w-4" />
-        <span>Join a New Room</span>
-      </button>
+      <div className="flex w-full max-w-md flex-col items-center gap-3 text-center">
+        <p className="text-xs font-bold tracking-wide opacity-80">
+          Stay on this screen — if the Host taps Play Again, you&apos;ll stay in this room automatically!
+        </p>
+        <button
+          id="player-join-new-room-btn"
+          type="button"
+          onClick={onLeave}
+          className={`inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-bold shadow-md transition active:scale-[0.98] ${
+            isRed
+              ? 'bg-white/95 text-rose-700 hover:bg-white'
+              : 'bg-slate-950 text-white hover:bg-slate-800'
+          }`}
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Switch / Leave Room</span>
+        </button>
+      </div>
     </div>
   );
 }

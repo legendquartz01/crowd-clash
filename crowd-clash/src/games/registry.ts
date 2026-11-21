@@ -1,7 +1,11 @@
 import type { MiniGameDefinition, MiniGameProps } from '../types/game';
-import { QuickMathGame } from './QuickMathGame';
-import { StroopFlashGame } from './StroopFlashGame';
+import { ColorClashGame } from './ColorClashGame';
+import { EmojiFlashGame } from './EmojiFlashGame';
+import { OddOneOutGame } from './OddOneOutGame';
+import { QuickMathBlitzGame } from './QuickMathBlitzGame';
+import { RedLightTapGame } from './RedLightTapGame';
 import { TargetBlitzGame } from './TargetBlitzGame';
+import { TrueOrFalseGame } from './TrueOrFalseGame';
 import { TugOfWarGame } from './TugOfWarGame';
 
 export type { MiniGameProps, MiniGameDefinition };
@@ -24,15 +28,70 @@ export const GAME_REGISTRY: MiniGameDefinition[] = [
     component: TugOfWarGame,
   },
   {
-    id: 'stroop-flash',
-    title: 'Stroop Flash',
-    tagline: 'Color vs. word brain clash',
+    id: 'odd-one-out',
+    title: 'Odd One Out',
+    tagline: 'Lookalike emojis & color shades',
+    rules: 'Tap the one tile that does not match — build streaks as the grid scales up to 5×5!',
+    durationSec: 25,
+    icon: 'eye',
+    accent: '#10B981',
+    throttleMs: 180,
+    component: OddOneOutGame,
+  },
+  {
+    id: 'color-clash',
+    title: 'Color Clash',
+    tagline: 'Stroop ink-vs-word reflex test',
     rules: 'Tap the button matching the INK COLOR of the word — ignore what the word says!',
     durationSec: 25,
     icon: 'palette',
     accent: '#2563EB',
-    throttleMs: 200,
-    component: StroopFlashGame,
+    throttleMs: 180,
+    component: ColorClashGame,
+  },
+  {
+    id: 'quick-math-blitz',
+    title: 'Quick Math Blitz',
+    tagline: 'Lightning mental arithmetic',
+    rules: 'Solve addition, subtraction, and multiplication fast for speed and streak bonuses!',
+    durationSec: 25,
+    icon: 'zap',
+    accent: '#F59E0B',
+    throttleMs: 180,
+    component: QuickMathBlitzGame,
+  },
+  {
+    id: 'red-light-tap',
+    title: 'Red Light, Tap!',
+    tagline: 'Mash on green, freeze on red',
+    rules: 'Tap the giant button as fast as you can on GREEN — FREEZE on RED or lose 10 points!',
+    durationSec: 25,
+    icon: 'hand',
+    accent: '#10B981',
+    throttleMs: 250,
+    component: RedLightTapGame,
+  },
+  {
+    id: 'true-or-false',
+    title: 'True or False Sprint',
+    tagline: 'Rapid-fire crowd trivia',
+    rules: 'Read each statement fast and smash TRUE or FALSE — streaks multiply your score!',
+    durationSec: 30,
+    icon: 'check',
+    accent: '#10B981',
+    throttleMs: 180,
+    component: TrueOrFalseGame,
+  },
+  {
+    id: 'emoji-flash',
+    title: 'Emoji Flash',
+    tagline: '2-second memory sequence',
+    rules: 'Memorize the flashed emoji order for 2 seconds, then tap them back in exact order!',
+    durationSec: 30,
+    icon: 'sparkles',
+    accent: '#38BDF8',
+    throttleMs: 180,
+    component: EmojiFlashGame,
   },
   {
     id: 'target-blitz',
@@ -44,17 +103,6 @@ export const GAME_REGISTRY: MiniGameDefinition[] = [
     accent: '#10B981',
     throttleMs: 200,
     component: TargetBlitzGame,
-  },
-  {
-    id: 'quick-math',
-    title: 'Speed Surge',
-    tagline: 'Lightning mental arithmetic',
-    rules: 'Solve equations under 2 seconds for a +5 speed bonus — wrong taps cost 5 points!',
-    durationSec: 25,
-    icon: 'zap',
-    accent: '#F59E0B',
-    throttleMs: 200,
-    component: QuickMathGame,
   },
 ];
 

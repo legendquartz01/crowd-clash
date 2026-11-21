@@ -148,6 +148,24 @@
   }
 }
 
+@keyframes countdown-pop {
+  0% {
+    opacity: 0;
+    transform: scale(1.65);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(0.95);
+  }
+  60% {
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .animate-chip-pop {
   animation: chip-pop 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -166,4 +184,8 @@
 
 .animate-urgency {
   animation: urgency-pulse 750ms ease-in-out infinite;
+}
+
+.animate-countdown-pop {
+  animation: countdown-pop 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
